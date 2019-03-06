@@ -4,9 +4,11 @@ import java.net.Socket;
 import java.util.concurrent.Semaphore;
 
 public class ChatClient {
-    public static Semaphore nicknameLock;
+    public static Semaphore clientLock;
+    public static Semaphore serverLock;
     public static void main(String[] args) {
-        nicknameLock = new Semaphore(1);
+        clientLock = new Semaphore(0);
+        serverLock = new Semaphore(0);
 //        JFrame frame = new JFrame("Chat Client");
 //        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         if (args.length != 2) {
@@ -26,8 +28,6 @@ public class ChatClient {
             new ClientInput(chatServer).start();
             new ServerOutput(chatServer).start();
         } catch (IOException e) {
-        }
-        while(!ServerOutput.welcomeAcknowledged){
         }
 //        frame.setVisible(true);
     }

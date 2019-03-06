@@ -9,7 +9,7 @@ import java.util.ArrayList;
 public class ServerOutput extends Thread{
     protected Socket server;
     protected ArrayList<String> messages;
-    public static boolean welcomeAcknowledged = false;
+    public static volatile boolean welcomeAcknowledged = false;
     public ServerOutput(Socket server) {
         this.server = server;
         this.messages = new ArrayList<>(1000);
@@ -19,13 +19,19 @@ public class ServerOutput extends Thread{
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(server.getInputStream()));
             System.out.println(in.readLine());
-            ClientInput.welcomeRecieved = true;
-            String message;
-            while ((message = in.readLine()).startsWith("Nickname")) {
-                System.out.println(message);
+            String message = "";
+            while(true){
+                ChatClient.clientLock.acquire();
+                if(recieve(in)){
+                    ChatClient.serverLock.release();
+                }
+                else{
+                    welcomeAcknowledged = true;
+                    ChatClient.serverLock.release();
+                    break;
+                }
             }
-            welcomeAcknowledged = true;
-//            render();
+            render();
             int index = 0;
             while ((message = in.readLine()) != null) {
                 messages.add(index, message);
@@ -33,6 +39,8 @@ public class ServerOutput extends Thread{
                 render();
             }
         } catch (IOException e) {
+
+        } catch (InterruptedException e){
 
         }
     }
@@ -42,7 +50,11 @@ public class ServerOutput extends Thread{
         System.out.flush();
 
         for (String message : messages) {
-            System.out.println(message);
+            if(message.equals("")){
+                System.out.println();
+            } else {
+                System.out.println(message);
+            }
         }
         try{
             String seperator = new String(new char[org.jline.terminal.TerminalBuilder.terminal().getWidth()]).replace("\0", "-");
@@ -52,5 +64,22 @@ public class ServerOutput extends Thread{
 
         }
 
+    }
+
+    public boolean recieve(BufferedReader in) throws  IOException{
+        String message;
+        boolean isError = false;
+        try{
+            while((message = in.readLine()) != null){
+                System.out.println(message);
+                isError = message.startsWith("Enter");
+                if(isError || message.startsWith(ClientInput.username))
+                    break;
+            }
+            return isError;
+
+        } catch (IOException e){
+            throw new IOException(e);
+        }
     }
 }

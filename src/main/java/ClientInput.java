@@ -23,6 +23,8 @@ public class ClientInput extends Thread {
                 username = sc.readLine();
                 out.print(username + "\r\n");
                 out.flush();
+                ChatClient.clientLock.release();
+                ChatClient.serverLock.acquire();
             }
             while (true) {
                 message = sc.readLine();
@@ -31,6 +33,7 @@ public class ClientInput extends Thread {
             }
         } catch (IOException e) {
 
+        } catch (InterruptedException e){
         }
     }
 }
